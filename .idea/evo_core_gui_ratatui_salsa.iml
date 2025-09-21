@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="EMPTY_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/evo_core_gui_ratatui_salsa/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-cursor/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-dialog/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-dialog/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-event/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-event/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-focus/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-focus/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-ftable/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-ftable/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-ftable/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-markdown/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-menu/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-popup/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-popup/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-reloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-salsa/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-salsa/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-scrolled/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-scrolled/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-text/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-text/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-text/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-theme/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-theme2/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-widget/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-widget/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rat-widget/tests" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

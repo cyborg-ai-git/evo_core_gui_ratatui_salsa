@@ -25,7 +25,7 @@ pub mod event {
     pub use crate::radio::event::RadioOutcome;
     pub use crate::slider::event::SliderOutcome;
     pub use crate::tabbed::event::TabbedOutcome;
-    pub use rat_focus::event::FocusTraversal;
+
     pub use rat_ftable::event::{DoubleClickOutcome, EditOutcome, TableOutcome};
     pub use rat_menu::event::MenuOutcome;
     pub use rat_popup::event::PopupOutcome;
@@ -92,8 +92,7 @@ pub mod date_input {
         DateInput, DateInputState, handle_events, handle_mouse_events, handle_readonly_events,
     };
 }
-pub mod caption;
-pub use caption::*;
+
 pub mod file_dialog;
 pub mod hover;
 /// Line numbers widget.
