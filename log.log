@@ -1,0 +1,52 @@
+mouse down 38,2
+focus at 38,2
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+    -> Some("not_blue")
+mouse down 76,13
+focus at 76,13
+    area-match "blue"
+    -> focus 1:"blue"
+    -> Some("blue")
+mouse down 35,2
+focus at 35,2
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+    -> Some("not_blue")
+mouse down 35,2
+focus at 35,2
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+mouse down 35,2
+focus at 35,2
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+mouse down 35,2
+focus at 35,2
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+mouse down 66,12
+focus at 66,12
+    area-match "blue"
+    -> focus 1:"blue"
+    -> Some("blue")
+mouse down 42,5
+focus at 42,5
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+    -> Some("not_blue")
+mouse down 77,13
+focus at 77,13
+    area-match "blue"
+    -> focus 1:"blue"
+    -> Some("blue")
+mouse down 40,5
+focus at 40,5
+    area-match "not_blue"
+    -> focus 0:"not_blue"
+    -> Some("not_blue")
+mouse down 65,13
+focus at 65,13
+    area-match "blue"
+    -> focus 1:"blue"
+    -> Some("blue")
