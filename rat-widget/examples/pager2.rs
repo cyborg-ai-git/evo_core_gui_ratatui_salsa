@@ -30,6 +30,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut state = State {
         flex: Default::default(),
         line_spacing: 1,
+        columns: 1,
         pager: Default::default(),
         hundred: array::from_fn(|_| Default::default()),
         menu: Default::default(),
@@ -51,6 +52,7 @@ struct Data {}
 struct State {
     flex: Flex,
     line_spacing: u16,
+    columns: u8,
     pager: DualPagerState<FocusFlag>,
     hundred: [TextInputMockState; HUN],
     menu: MenuLineState,
@@ -63,10 +65,6 @@ fn repaint_input(
     istate: &mut MiniSalsaState,
     state: &mut State,
 ) -> Result<(), anyhow::Error> {
-    if istate.status[0] == "Ctrl-Q to quit." {
-        istate.status[0] = "Ctrl-Q to quit. F2 flex. F3 line sp. F4/F5 navigate page.".into();
-    }
-
     let l1 = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
@@ -101,6 +99,7 @@ fn repaint_input(
             .mirror_odd_border()
             .border(Padding::new(4, 2, 0, 0))
             .line_spacing(state.line_spacing)
+            .columns(state.columns)
             .flex(state.flex);
 
         for i in 0..state.hundred.len() {
@@ -149,6 +148,11 @@ fn repaint_input(
 
     let menu1 = MenuLine::new()
         .title("#.#")
+        .item_parsed("_Flex|F2")
+        .item_parsed("_Spacing|F3")
+        .item_parsed("_Columns|F4")
+        .item_parsed("_Next|F8")
+        .item_parsed("_Prev|F9")
         .item_parsed("_Quit")
         .styles(THEME.menu_style());
     frame.render_stateful_widget(menu1, l1[3], &mut state.menu);
@@ -202,58 +206,84 @@ fn handle_input(
             debug!("{:#?}", state.pager.layout.borrow());
             Outcome::Unchanged
         }
-        ct_event!(keycode press F(2)) => {
-            state.pager.clear();
-            state.flex = match state.flex {
-                Flex::Legacy => Flex::Start,
-                Flex::Start => Flex::End,
-                Flex::End => Flex::Center,
-                Flex::Center => Flex::SpaceBetween,
-                Flex::SpaceBetween => Flex::SpaceAround,
-                Flex::SpaceAround => Flex::Legacy,
-            };
-            Outcome::Changed
-        }
-        ct_event!(keycode press F(3)) => {
-            state.pager.clear();
-            state.line_spacing = match state.line_spacing {
-                0 => 1,
-                1 => 2,
-                2 => 3,
-                _ => 0,
-            };
-            Outcome::Changed
-        }
-        ct_event!(keycode press F(4)) => {
-            if state.pager.prev_page() {
-                if let Some(first) = state.pager.first(state.pager.page()) {
-                    focus.focus(&first);
-                }
-                Outcome::Changed
-            } else {
-                Outcome::Unchanged
-            }
-        }
-        ct_event!(keycode press F(5)) => {
-            if state.pager.next_page() {
-                if let Some(first) = state.pager.first(state.pager.page()) {
-                    focus.focus(&first);
-                }
-                Outcome::Changed
-            } else {
-                Outcome::Unchanged
-            }
-        }
+        ct_event!(keycode press F(2)) => flip_flex(state),
+        ct_event!(keycode press F(3)) => flip_spacing(state),
+        ct_event!(keycode press F(4)) => flip_columns(state),
+        ct_event!(keycode press F(8)) => prev_page(state, &focus),
+        ct_event!(keycode press F(9)) => next_page(state, &focus),
         _ => Outcome::Continue,
     });
 
     try_flow!(match state.menu.handle(event, Regular) {
-        MenuOutcome::Activated(0) => {
+        MenuOutcome::Activated(0) => flip_flex(state),
+        MenuOutcome::Activated(1) => flip_spacing(state),
+        MenuOutcome::Activated(2) => flip_columns(state),
+        MenuOutcome::Activated(3) => next_page(state, &focus),
+        MenuOutcome::Activated(4) => prev_page(state, &focus),
+        MenuOutcome::Activated(5) => {
             istate.quit = true;
             Outcome::Changed
         }
-        _ => Outcome::Continue,
+        r => r.into(),
     });
 
     Ok(Outcome::Continue)
+}
+
+fn flip_flex(state: &mut State) -> Outcome {
+    state.pager.clear();
+    state.flex = match state.flex {
+        Flex::Legacy => Flex::Start,
+        Flex::Start => Flex::End,
+        Flex::End => Flex::Center,
+        Flex::Center => Flex::SpaceBetween,
+        Flex::SpaceBetween => Flex::SpaceAround,
+        Flex::SpaceAround => Flex::Legacy,
+    };
+    Outcome::Changed
+}
+
+fn flip_spacing(state: &mut State) -> Outcome {
+    state.pager.clear();
+    state.line_spacing = match state.line_spacing {
+        0 => 1,
+        1 => 2,
+        2 => 3,
+        _ => 0,
+    };
+    Outcome::Changed
+}
+
+fn flip_columns(state: &mut State) -> Outcome {
+    state.pager.clear();
+    state.columns = match state.columns {
+        1 => 2,
+        2 => 3,
+        3 => 4,
+        4 => 5,
+        _ => 1,
+    };
+    Outcome::Changed
+}
+
+fn prev_page(state: &mut State, focus: &Focus) -> Outcome {
+    if state.pager.prev_page() {
+        if let Some(widget) = state.pager.first(state.pager.page()) {
+            focus.focus(&widget);
+        }
+        Outcome::Changed
+    } else {
+        Outcome::Unchanged
+    }
+}
+
+fn next_page(state: &mut State, focus: &Focus) -> Outcome {
+    if state.pager.next_page() {
+        if let Some(widget) = state.pager.first(state.pager.page()) {
+            focus.focus(&widget);
+        }
+        Outcome::Changed
+    } else {
+        Outcome::Unchanged
+    }
 }
