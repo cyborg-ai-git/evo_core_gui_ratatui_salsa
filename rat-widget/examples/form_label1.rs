@@ -2,18 +2,22 @@
 
 use crate::mini_salsa::theme::THEME;
 use crate::mini_salsa::{MiniSalsaState, run_ui, setup_logging};
-use log::warn;
+use log::{debug, warn};
 use rat_event::{HandleEvent, Popup, Regular, ct_event, try_flow};
 use rat_focus::{Focus, FocusBuilder, FocusFlag, HasFocus, Navigation, impl_has_focus};
 use rat_menu::event::MenuOutcome;
 use rat_menu::menuline::{MenuLine, MenuLineState};
 use rat_text::clipboard::{Clipboard, ClipboardError, set_global_clipboard};
+use rat_text::impl_screen_cursor;
 use rat_text::text_area::{TextArea, TextAreaState};
 use rat_text::text_input::{TextInput, TextInputState};
 use rat_text::text_input_mask::{MaskedInput, MaskedInputState};
 use rat_widget::choice::{Choice, ChoiceState};
 use rat_widget::event::{Outcome, PagerOutcome};
-use rat_widget::pager::{DualPager, DualPagerState};
+use rat_widget::layout::LayoutForm;
+use rat_widget::pager::{
+    DualPager, DualPagerState, Form, FormState, SinglePager, SinglePagerState,
+};
 use rat_widget::paired::{Paired, PairedState, PairedWidget};
 use rat_widget::slider::{Slider, SliderState};
 use rat_widget::text::HasScreenCursor;
@@ -49,7 +53,10 @@ fn main() -> Result<(), anyhow::Error> {
 struct Data {}
 
 struct State {
-    form: DualPagerState<usize>,
+    flex: Flex,
+    columns: u8,
+    line_spacing: u16,
+    form: SinglePagerState<usize>,
 
     name: TextInputState,
     version: MaskedInputState,
@@ -71,6 +78,9 @@ struct State {
 impl Default for State {
     fn default() -> Self {
         let mut s = Self {
+            flex: Default::default(),
+            columns: 1,
+            line_spacing: 1,
             form: Default::default(),
             name: Default::default(),
             version: Default::default(),
@@ -108,34 +118,39 @@ fn repaint_input(
     let l2 = Layout::horizontal([Constraint::Fill(1)]).split(l1[0]);
 
     // set up form
-    let form = DualPager::new()
-        .styles(THEME.pager_style())
-        .auto_label(true);
+    let form = SinglePager::new() //
+        .styles(THEME.pager_style());
 
     // maybe rebuild layout
-    use rat_widget::layout::{FormLabel as L, FormWidget as W, LayoutForm};
-    if !state.form.valid_layout(form.layout_size(l2[0])) {
-        let mut lf = LayoutForm::new() //
-            .spacing(1)
-            .line_spacing(1)
-            .border(Padding::new(2, 2, 1, 1))
-            .flex(Flex::Legacy);
 
-        lf.widget(state.name.id(), L::Str("Name"), W::Width(20));
-        lf.widget(state.version.id(), L::Str("Version"), W::Width(12));
-        lf.widget(state.edition.id(), L::Str("Edition"), W::Width(20));
-        lf.widget(state.author.id(), L::Str("Author"), W::Width(20));
-        lf.widget(state.descr.id(), L::Str("Describe"), W::StretchXY(20, 4));
-        lf.widget(state.license.id(), L::Str("License"), W::Width(18));
-        lf.widget(state.repository.id(), L::Str("Repository"), W::Width(25));
-        lf.widget(state.readme.id(), L::Str("Readme"), W::Width(20));
-        lf.widget(state.keywords.id(), L::Str("Keywords"), W::Width(25));
+    if !state.form.valid_layout(form.layout_size(l2[0])) {
+        use rat_widget::layout::{FormLabel as L, FormWidget as W};
+
+        let mut lf = LayoutForm::new() //
+            .border(Padding::new(2, 2, 1, 1))
+            .line_spacing(state.line_spacing)
+            .columns(state.columns)
+            .flex(state.flex);
+
+        lf.widgets([
+            (state.name.id(), L::Str("Name"), W::Width(20)),
+            (state.version.id(), L::Str("Version"), W::Width(12)),
+            (state.edition.id(), L::Str("Edition"), W::Width(20)),
+            (state.author.id(), L::Str("Author"), W::Width(20)),
+            (state.descr.id(), L::Str("Describe"), W::StretchXY(20, 4)),
+            (state.license.id(), L::Str("License"), W::Width(18)),
+            (state.repository.id(), L::Str("Repository"), W::Width(25)),
+            (state.readme.id(), L::Str("Readme"), W::Width(20)),
+            (state.keywords.id(), L::Str("Keywords"), W::Width(25)),
+        ]);
         lf.page_break();
-        lf.widget(state.category1.id(), L::Str("Category"), W::Width(25));
-        lf.widget(state.category2.id(), L::None, W::Width(25));
-        lf.widget(state.category3.id(), L::None, W::Width(25));
-        lf.widget(state.category4.id(), L::None, W::Width(25));
-        lf.widget(state.category5.id(), L::None, W::Width(25));
+        lf.widgets([
+            (state.category1.id(), L::Str("Category"), W::Width(25)),
+            (state.category2.id(), L::None, W::Width(25)),
+            (state.category3.id(), L::None, W::Width(25)),
+            (state.category4.id(), L::None, W::Width(25)),
+            (state.category5.id(), L::None, W::Width(25)),
+        ]);
 
         state
             .form
@@ -235,36 +250,28 @@ fn repaint_input(
     );
 
     // popups
-    if let Some(license_popup) = license_popup {
-        form.render(state.license.id(), || license_popup, &mut state.license);
-    }
+    form.render_opt(state.license.id(), || license_popup, &mut state.license);
 
-    if let Some(cursor) = state
-        .name
-        .screen_cursor()
-        .or(state.version.screen_cursor())
-        .or(state.author.screen_cursor())
-        .or(state.descr.screen_cursor())
-        .or(state.repository.screen_cursor())
-        .or(state.readme.screen_cursor())
-        .or(state.keywords.screen_cursor())
-        .or(state.category1.screen_cursor())
-        .or(state.category2.screen_cursor())
-        .or(state.category3.screen_cursor())
-        .or(state.category4.screen_cursor())
-        .or(state.category5.screen_cursor())
-    {
+    if let Some(cursor) = state.screen_cursor() {
         frame.set_cursor_position(cursor);
     }
 
     let menu1 = MenuLine::new()
         .title("#.#")
+        .item_parsed("_Flex|F2")
+        .item_parsed("_Spacing|F3")
+        .item_parsed("_Columns|F4")
+        .item_parsed("_Next|F8")
+        .item_parsed("_Prev|F9")
         .item_parsed("_Quit")
         .styles(THEME.menu_style());
     frame.render_stateful_widget(menu1, l1[1], &mut state.menu);
 
     Ok(())
 }
+
+impl_screen_cursor!(name, version, author, descr, repository, readme,
+    keywords, category1, category2, category3, category4, category5 for State);
 
 impl HasFocus for State {
     fn build(&self, builder: &mut FocusBuilder) {
@@ -308,12 +315,30 @@ fn handle_input(
 
     istate.focus_outcome = focus.handle(event, Regular);
 
+    try_flow!(match event {
+        ct_event!(keycode press F(1)) => {
+            debug!("{:#?}", state.form.layout.borrow());
+            Outcome::Unchanged
+        }
+        ct_event!(keycode press F(2)) => flip_flex(state),
+        ct_event!(keycode press F(3)) => flip_spacing(state),
+        ct_event!(keycode press F(4)) => flip_columns(state),
+        ct_event!(keycode press F(8)) => prev_page(state, &focus),
+        ct_event!(keycode press F(9)) => next_page(state, &focus),
+        _ => Outcome::Continue,
+    });
+
     try_flow!(match state.menu.handle(event, Regular) {
-        MenuOutcome::Activated(0) => {
+        MenuOutcome::Activated(0) => flip_flex(state),
+        MenuOutcome::Activated(1) => flip_spacing(state),
+        MenuOutcome::Activated(2) => flip_columns(state),
+        MenuOutcome::Activated(3) => next_page(state, &focus),
+        MenuOutcome::Activated(4) => prev_page(state, &focus),
+        MenuOutcome::Activated(5) => {
             istate.quit = true;
             Outcome::Changed
         }
-        _ => Outcome::Continue,
+        r => r.into(),
     });
 
     // page navigation for the form.
@@ -375,6 +400,64 @@ fn handle_input(
     });
 
     Ok(Outcome::Continue)
+}
+
+fn flip_flex(state: &mut State) -> Outcome {
+    state.form.clear();
+    state.flex = match state.flex {
+        Flex::Legacy => Flex::Start,
+        Flex::Start => Flex::End,
+        Flex::End => Flex::Center,
+        Flex::Center => Flex::SpaceBetween,
+        Flex::SpaceBetween => Flex::SpaceAround,
+        Flex::SpaceAround => Flex::Legacy,
+    };
+    Outcome::Changed
+}
+
+fn flip_spacing(state: &mut State) -> Outcome {
+    state.form.clear();
+    state.line_spacing = match state.line_spacing {
+        0 => 1,
+        1 => 2,
+        2 => 3,
+        _ => 0,
+    };
+    Outcome::Changed
+}
+
+fn flip_columns(state: &mut State) -> Outcome {
+    state.form.clear();
+    state.columns = match state.columns {
+        1 => 2,
+        2 => 3,
+        3 => 4,
+        4 => 5,
+        _ => 1,
+    };
+    Outcome::Changed
+}
+
+fn prev_page(state: &mut State, focus: &Focus) -> Outcome {
+    if state.form.prev_page() {
+        if let Some(widget) = state.form.first(state.form.page()) {
+            focus.by_widget_id(widget);
+        }
+        Outcome::Changed
+    } else {
+        Outcome::Unchanged
+    }
+}
+
+fn next_page(state: &mut State, focus: &Focus) -> Outcome {
+    if state.form.next_page() {
+        if let Some(widget) = state.form.first(state.form.page()) {
+            focus.by_widget_id(widget);
+        }
+        Outcome::Changed
+    } else {
+        Outcome::Unchanged
+    }
 }
 
 #[derive(Debug, Default, Clone)]
